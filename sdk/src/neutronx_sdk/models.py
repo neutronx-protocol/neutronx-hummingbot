@@ -14,6 +14,7 @@ from neutronx_sdk.orders import (
 )
 
 MARKET_STATUS_ACTIVE = "ACTIVE"
+PPM = 1_000_000
 POSITION_SIDE_LONG = "LONG"
 POSITION_SIDE_SHORT = "SHORT"
 POSITION_STATUS_OPEN = "OPEN"
@@ -60,6 +61,8 @@ class Market:
     taker_fee_rate: Decimal
     maintenance_margin: Decimal
     price_band_percent: Decimal
+    effective_max_leverage: Decimal
+    max_slippage: Decimal
 
     @property
     def is_active(self) -> bool:
@@ -67,16 +70,20 @@ class Market:
 
     @classmethod
     def from_proto(cls, message: Any) -> Market:
+        max_leverage = from_legacy_dec(str(message.max_leverage))
+        effective = positive_legacy_dec(str(message.effective_max_leverage))
         return cls(
             pair=str(message.pair),
             status=str(message.status).strip().upper(),
             tick_size=from_legacy_dec(str(message.tick_size)).normalize(),
             min_quantity=from_legacy_dec(str(message.min_quantity)),
-            max_leverage=from_legacy_dec(str(message.max_leverage)),
+            max_leverage=max_leverage,
             maker_fee_rate=from_legacy_dec(str(message.maker_fee_rate)),
             taker_fee_rate=from_legacy_dec(str(message.taker_fee_rate)),
             maintenance_margin=from_legacy_dec(str(message.maintenance_margin)),
             price_band_percent=from_legacy_dec(str(message.price_band_percent)),
+            effective_max_leverage=min(effective or max_leverage, max_leverage),
+            max_slippage=Decimal(int(message.max_slippage_ppm)) / PPM,
         )
 
 

@@ -407,7 +407,7 @@ class NeutronxPerpetualDerivative(PerpetualDerivativePyBase):
         side = translators.to_side(trade_type)
         time_in_force = TimeInForce.GTC
         if order_type is OrderType.MARKET:
-            price = self._market_order_price(trading_pair, trade_type, price)
+            price = self._market_order_price(market, trading_pair, trade_type, price)
             time_in_force = TimeInForce.IOC
         return OrderRequest(
             pair=market.pair,
@@ -422,17 +422,17 @@ class NeutronxPerpetualDerivative(PerpetualDerivativePyBase):
             client_id=int(order_id),
         )
 
-    def _market_order_price(self, trading_pair: str, trade_type: TradeType, price: Decimal) -> Decimal:
+    def _market_order_price(self, market: Market, trading_pair: str, trade_type: TradeType, price: Decimal) -> Decimal:
         reference = Decimal(price) if price is not None and Decimal(price).is_finite() and price > 0 else None
         if reference is None:
             reference = self.get_mid_price(trading_pair)
         if reference is None or not reference.is_finite() or reference <= 0:
             raise ValueError(f"no reference price to place a market order on {trading_pair}")
-        slippage = CONSTANTS.MARKET_ORDER_SLIPPAGE
+        slippage = market.max_slippage if market.max_slippage > 0 else CONSTANTS.MARKET_ORDER_SLIPPAGE
         return reference * (1 + slippage) if trade_type is TradeType.BUY else reference * (1 - slippage)
 
     def _order_leverage(self, trading_pair: str, market: Market) -> Decimal:
-        ceiling = max(1, int(market.max_leverage))
+        ceiling = max(1, int(market.effective_max_leverage))
         return Decimal(max(1, min(int(self.get_leverage(trading_pair)), ceiling)))
 
     async def _place_cancel(self, order_id: str, tracked_order: InFlightOrder) -> bool:
@@ -783,6 +783,12 @@ class NeutronxPerpetualDerivative(PerpetualDerivativePyBase):
             return False, f"{trading_pair} is not an active NeutronX market"
         if leverage < 1 or Decimal(leverage) > market.max_leverage:
             return False, f"leverage on {trading_pair} must be between 1 and {market.max_leverage}"
+        if Decimal(leverage) > market.effective_max_leverage:
+            allowed = format(market.effective_max_leverage.normalize(), "f")
+            self.logger().warning(
+                f"Open interest on {trading_pair} limits leverage to {allowed} for now; "
+                f"orders go out with it until the market allows {leverage} again."
+            )
         return True, ""
 
     async def _trading_pair_position_mode_set(self, mode: PositionMode, trading_pair: str) -> Tuple[bool, str]:

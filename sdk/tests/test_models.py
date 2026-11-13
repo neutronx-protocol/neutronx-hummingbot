@@ -44,6 +44,23 @@ def test_market_reads_plain_decimal_fields() -> None:
     assert str(market.tick_size) == "0.0001"
     assert market.maker_fee_rate == Decimal("0.0002")
     assert market.max_leverage == 10
+    assert market.effective_max_leverage == 10
+    assert market.max_slippage == 0
+
+
+def test_market_reads_the_leverage_open_interest_allows_and_the_slippage_limit() -> None:
+    def market(**fields: object) -> Market:
+        response = "neutronx.perps.v1.QueryMarketResponse"
+        return Market.from_proto(
+            new(response, pair="ADA/USDC", max_leverage="10.000000000000000000", **fields)
+        )
+
+    scaled = market(effective_max_leverage="2.500000000000000000", max_slippage_ppm=5000)
+    assert (scaled.max_leverage, scaled.effective_max_leverage) == (Decimal(10), Decimal("2.5"))
+    assert scaled.max_slippage == Decimal("0.005")
+    assert market(effective_max_leverage="0.000000000000000000").effective_max_leverage == 10
+    assert market(effective_max_leverage="25.000000000000000000").effective_max_leverage == 10
+    assert market(max_slippage_ppm=10000).max_slippage == Decimal("0.01")
 
 
 def test_order_book_reads_legacy_dec_and_empty_sides() -> None:

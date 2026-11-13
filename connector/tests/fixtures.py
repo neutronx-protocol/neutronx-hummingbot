@@ -27,6 +27,8 @@ def market(
     tick: str = "0.5",
     min_quantity: str = "0.001",
     max_leverage: int = 10,
+    effective_max_leverage: Optional[int] = None,
+    max_slippage: str = "0.01",
 ) -> Market:
     return Market(
         pair=pair,
@@ -38,6 +40,8 @@ def market(
         taker_fee_rate=Decimal("0.0005"),
         maintenance_margin=Decimal("0.01"),
         price_band_percent=Decimal("0.5"),
+        effective_max_leverage=Decimal(max_leverage if effective_max_leverage is None else effective_max_leverage),
+        max_slippage=Decimal(max_slippage),
     )
 
 

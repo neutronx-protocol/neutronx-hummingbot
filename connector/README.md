@@ -57,9 +57,13 @@ public key or lacks permission for the order messages.
 ## What to expect
 
 - **Order types.** `LIMIT`, `LIMIT_MAKER` (post-only) and `MARKET`. A market order is sent as an
-  immediate-or-cancel limit 5% through the mid price.
+  immediate-or-cancel limit priced through the mid price by the market's slippage limit: 0.5% on
+  BTC and ETH and 1% on the other markets today. The chain refuses any fill further than that
+  from the oracle price, so a thin book fills a market order in part rather than at a worse price.
 - **Position mode.** One-way only: the chain nets positions per pair and subaccount.
-- **Leverage.** Kept per pair, sent with every order and capped at the market maximum.
+- **Leverage.** Kept per pair, sent with every order and capped at what the market allows. A
+  market lowers its limit while its open interest is high; orders then go out with the lower
+  leverage and lock more margin, and the connector warns when the leverage you set is above it.
 - **Collateral and fees.** Margin is USDC. Trading fees follow the account's fee tier on chain.
 - **Transaction fees.** Gas is paid in USDC from the account's wallet balance, not from the trading
   account that holds the margin. A transaction costs a fraction of a cent; keep about 1 USDC in

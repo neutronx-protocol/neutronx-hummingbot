@@ -751,15 +751,32 @@ class NeutronxPerpetualDerivativeTests(AbstractPerpetualDerivativeTests.Perpetua
         )
         self.assertEqual((Decimal("65000.5"), True, True), (maker.price, maker.post_only, maker.reduce_only))
         with patch.object(self.connector, "get_mid_price", return_value=Decimal(100)):
-            market = self.connector._order_request(
+            taker = self.connector._order_request(
                 "103", PAIR, Decimal("0.01"), TradeType.BUY, OrderType.MARKET, Decimal("NaN"), PositionAction.OPEN
             )
-        self.assertEqual((ChainOrderType.LIMIT, TimeInForce.IOC, Decimal(105)), (market.order_type, market.time_in_force, market.price))
-        sell = self.connector._market_order_price(PAIR, TradeType.SELL, Decimal(200))
-        self.assertEqual(Decimal(190), sell)
+        self.assertEqual((ChainOrderType.LIMIT, TimeInForce.IOC, Decimal(101)), (taker.order_type, taker.time_in_force, taker.price))
+        listed = self.connector._markets[PAIR]
+        self.assertEqual(Decimal(198), self.connector._market_order_price(listed, PAIR, TradeType.SELL, Decimal(200)))
+        unguarded = market(max_slippage="0")
+        self.assertEqual(Decimal(190), self.connector._market_order_price(unguarded, PAIR, TradeType.SELL, Decimal(200)))
         with patch.object(self.connector, "get_mid_price", return_value=Decimal("NaN")):
             with self.assertRaises(ValueError):
-                self.connector._market_order_price(PAIR, TradeType.BUY, Decimal("NaN"))
+                self.connector._market_order_price(listed, PAIR, TradeType.BUY, Decimal("NaN"))
+
+    async def test_orders_carry_the_leverage_open_interest_allows(self):
+        self.connector._markets[PAIR] = market(effective_max_leverage=2)
+        self.assertEqual((True, ""), await self.connector._set_trading_pair_leverage(PAIR, 5))
+        self.assertTrue(self.is_logged(
+            "WARNING",
+            f"Open interest on {PAIR} limits leverage to 2 for now; orders go out with it until the market allows 5 again.",
+        ))
+        self.connector._perpetual_trading.set_leverage(PAIR, 5)
+        request = self.connector._order_request(
+            "104", PAIR, Decimal("0.01"), TradeType.BUY, OrderType.LIMIT, Decimal(65000), PositionAction.OPEN
+        )
+        self.assertEqual(Decimal(2), request.leverage)
+        self.connector._perpetual_trading.set_leverage(PAIR, 1)
+        self.assertEqual(Decimal(1), self.connector._order_leverage(PAIR, self.connector._markets[PAIR]))
 
     async def test_born_cancelled_post_only_order_is_cancelled(self):
         self.data_source.place_result = PlacedOrder(order_id=556, status="CANCELLED", filled=Decimal(0))
