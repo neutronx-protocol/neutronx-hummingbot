@@ -23,8 +23,8 @@ pip install neutronx-sdk
 ## Status
 
 The SDK is released on PyPI; the current version is 0.1.0. The connector is installed from this
-repository and has been run against the NeutronX testnet under Hummingbot 2.17.0; see the
-limitations listed in the connector README before using it with real funds.
+repository and has been run against the NeutronX testnet and mainnet under Hummingbot 2.17.0; see
+the limitations listed in the connector README before using it with real funds.
 
 ## Contributing
 

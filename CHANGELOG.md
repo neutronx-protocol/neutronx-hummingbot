@@ -6,6 +6,13 @@ Notable changes to the connector and the SDK. The format follows
 
 ## [Unreleased]
 
+### Connector
+
+- Verified on mainnet (chain v1.81.2) in addition to the testnet.
+- The connector warns at start when the wallet holds less than 0.1 USDC for transaction fees.
+- A failed cancel of a lost order no longer stops the remaining lost orders from being cancelled.
+- The main connector class is covered by the shared Hummingbot derivative test suite.
+
 ### SDK
 
 - Python 3.13 is tested and declared as supported.

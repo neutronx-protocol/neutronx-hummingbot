@@ -84,6 +84,8 @@ points either one at a node of your own.
   40 000 per cancel, and a cancel by order id costs 15 000 more. Chain v1.81.2 starts from 40 000
   and has no extra for cancels by id, so gas sized for the newer rule is accepted by both.
   `neutronx_sdk.tx.tx_prefill_gas_floor` computes the minimum for a list of messages.
+- A regular tx pays its fee in the margin denom from the account's bank balance, not from the
+  trading subaccount; a tx signed by an agent key is paid by the account it signs for.
 - An agent key signs for an account it cannot move funds from. Its txs carry the key id in a
   non-critical extension and sequence 0; its regular txs are unordered, with a timeout from
   `UnorderedNonce`.

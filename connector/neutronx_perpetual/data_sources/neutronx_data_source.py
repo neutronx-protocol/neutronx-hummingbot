@@ -1,5 +1,7 @@
 import asyncio
+import logging
 import time
+from decimal import Decimal
 from typing import Optional, Tuple
 
 from neutronx_sdk import (
@@ -30,6 +32,7 @@ from hummingbot.connector.derivative.neutronx_perpetual.data_sources.tx_queue im
     OrderTxQueue,
     PlacedOrder,
 )
+from hummingbot.logger import HummingbotLogger
 
 OPEN_STATUS_FILTER = "open"
 REGULAR_ORDERS = "regular"
@@ -43,6 +46,14 @@ def build_wallet(network: Network, account_address: str, private_key: str, agent
 
 
 class NeutronxDataSource:
+    _logger: Optional[HummingbotLogger] = None
+
+    @classmethod
+    def logger(cls) -> HummingbotLogger:
+        if cls._logger is None:
+            cls._logger = logging.getLogger(HummingbotLogger.logger_name_for_class(cls))
+        return cls._logger
+
     def __init__(
         self,
         network: Network,
@@ -96,6 +107,7 @@ class NeutronxDataSource:
             params = await self.orderbook_params(refresh=True)
             perps = await self._client.perps.params()
             self._sender = TxSender(self._client, self._wallet, fee=FeePolicy.for_trading(params, perps.margin_denom))
+            await self._warn_on_low_fee_balance(perps.margin_denom)
             self._client_ids.seed(order.client_id for order in await self.open_orders() if order.client_id)
             gas_ceiling = params.max_gas_wanted or CONSTANTS.DEFAULT_TX_GAS_CEILING
             self._queue = OrderTxQueue(
@@ -164,6 +176,15 @@ class NeutronxDataSource:
         if self._queue is None:
             raise ConnectionError("NeutronX trading has not started")
         return self._queue
+
+    async def _warn_on_low_fee_balance(self, denom: str) -> None:
+        coins = await self._client.bank.balances(self._account_address)
+        held = Decimal(sum(coin.amount for coin in coins if coin.denom == denom)).scaleb(-self._network.margin_decimals)
+        if held < CONSTANTS.LOW_FEE_BALANCE:
+            self.logger().warning(
+                f"The wallet of {self._account_address} holds {held} {CONSTANTS.QUOTE_ASSET} for transaction fees. "
+                "Fees are paid from the wallet, not from the trading account, and orders fail once it is empty."
+            )
 
     async def _check_agent_key(self, wallet: Wallet) -> None:
         enabled = await self._client.agentkeys.enabled()

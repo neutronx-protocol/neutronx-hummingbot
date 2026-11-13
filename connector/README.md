@@ -61,7 +61,10 @@ public key or lacks permission for the order messages.
 - **Position mode.** One-way only: the chain nets positions per pair and subaccount.
 - **Leverage.** Kept per pair, sent with every order and capped at the market maximum.
 - **Collateral and fees.** Margin is USDC. Trading fees follow the account's fee tier on chain.
-  Transaction gas is paid in the margin asset.
+- **Transaction fees.** Gas is paid in USDC from the account's wallet balance, not from the trading
+  account that holds the margin. A transaction costs a fraction of a cent; keep about 1 USDC in
+  the wallet. The connector warns at start when less than 0.1 USDC is left, and orders fail once
+  the wallet is empty.
 - **Sizes and prices.** Quantities step by `1e-8`; prices are snapped to the market tick.
 - **Order ids.** Client order ids are numeric (the chain's uint32 `client_id`).
 
@@ -76,11 +79,14 @@ public key or lacks permission for the order messages.
 - The chain may shrink a reduce-only order to the size of the position. Such an order is reported
   as `CANCELED` after its fills, so the unfilled remainder is not counted as traded.
 - A fill that lands at the moment Hummingbot shuts down is not recorded in that session.
+- After Hummingbot is killed and started again, the connector keeps tracking the orders that were
+  open and records their fills. Strategies built on executors do not take those orders or the open
+  position back under management, so check the account after a hard restart and close what the
+  previous session left. A normal `stop` cancels the orders and closes the position first.
 - Fills arrive from the indexer. If the indexer falls more than 30 blocks behind the chain the
   connector reports itself not connected and stops placing new orders until it catches up;
   cancels still go out.
-- Verified with Hummingbot 2.17.0 on the testnet (chain v1.82). The gas rules also cover chain
-  v1.81.2.
+- Verified with Hummingbot 2.17.0 on the testnet (chain v1.82) and on mainnet (chain v1.81.2).
 
 ## Indexer limits
 

@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from aioresponses import aioresponses
 from neutronx_sdk import NeutronXError, PrivateKey
-from neutronx_sdk.models import AgentKey
+from neutronx_sdk.models import AgentKey, Coin
 from neutronx_sdk.node import PositionsPage
 from neutronx_sdk.orders import AGENT_KEY_MSG_TYPE_URLS
 
@@ -214,7 +214,7 @@ class UserStreamDataSourceTests(IsolatedAsyncioWrapperTestCase):
         self.assertEqual("orders", queue.get_nowait()["channel"])
 
 
-def _client(enabled: bool = True, key: Any = None) -> MagicMock:
+def _client(enabled: bool = True, key: Any = None, fee_balance: int = 1_000_000) -> MagicMock:
     client = MagicMock()
     client.network = NETWORK
     client.orderbook.params = AsyncMock(return_value=orderbook_params(rate_limit=20))
@@ -236,6 +236,9 @@ def _client(enabled: bool = True, key: Any = None) -> MagicMock:
     client.agentkeys.enabled = AsyncMock(return_value=enabled)
     client.agentkeys.agent_key = AsyncMock(return_value=key)
     client.node.status = AsyncMock(return_value=SimpleNamespace(height=77))
+    client.bank.balances = AsyncMock(
+        return_value=(Coin(denom="untx", amount=5), Coin(denom="ibc/MARGIN", amount=fee_balance))
+    )
     client.close = AsyncMock()
     return client
 
@@ -267,6 +270,20 @@ class NeutronxDataSourceTests(IsolatedAsyncioWrapperTestCase):
         await source.close()
         client.close.assert_awaited_once()
         self.assertFalse(source.trading_ready)
+
+    async def test_start_trading_warns_when_the_wallet_is_short_of_fees(self):
+        wallet = build_wallet(NETWORK, ACCOUNT, PRIVATE_KEY, 0)
+        funded = NeutronxDataSource(NETWORK, ACCOUNT, wallet=wallet, client=_client())
+        with patch.object(NeutronxDataSource, "logger") as logger:
+            await funded.start_trading()
+            logger.return_value.warning.assert_not_called()
+            short = NeutronxDataSource(NETWORK, ACCOUNT, wallet=wallet, client=_client(fee_balance=99_999))
+            await short.start_trading()
+            message = logger.return_value.warning.call_args.args[0]
+        self.assertIn("holds 0.099999 USDC for transaction fees", message)
+        self.assertTrue(short.trading_ready)
+        await funded.stop()
+        await short.stop()
 
     async def test_overlapping_starts_leave_one_running_queue(self):
         source = NeutronxDataSource(NETWORK, ACCOUNT, wallet=build_wallet(NETWORK, ACCOUNT, PRIVATE_KEY, 0), client=_client())
