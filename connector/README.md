@@ -26,6 +26,10 @@ cd hummingbot
 It needs `git` and [`uv`](https://docs.astral.sh/uv/). To use an existing Hummingbot checkout,
 run `connector/scripts/link_hummingbot.sh /path/to/hummingbot` instead.
 
+Both scripts install the SDK from the `sdk/` directory of this repository, so the connector always
+runs against the SDK it was written for. The released SDK is on PyPI as
+[`neutronx-sdk`](https://pypi.org/project/neutronx-sdk/) for use outside Hummingbot.
+
 ## Connect
 
 Two connectors are registered: `neutronx_perpetual` (mainnet) and `neutronx_perpetual_testnet`.

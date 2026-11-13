@@ -1,5 +1,9 @@
 # neutronx-sdk
 
+[![PyPI](https://img.shields.io/pypi/v/neutronx-sdk)](https://pypi.org/project/neutronx-sdk/)
+[![Python](https://img.shields.io/pypi/pyversions/neutronx-sdk)](https://pypi.org/project/neutronx-sdk/)
+[![License](https://img.shields.io/pypi/l/neutronx-sdk)](https://www.apache.org/licenses/LICENSE-2.0)
+
 Python SDK for the NeutronX perpetuals chain: keys and agent keys, transaction building and
 signing, short-term orders, gRPC queries and broadcasting.
 

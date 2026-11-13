@@ -36,6 +36,23 @@ cd hummingbot
 The setup script clones Hummingbot into `hummingbot/` and links the connector and its tests into
 it, so edits under `connector/` are picked up without copying.
 
+## Releasing the SDK
+
+Releases are published to PyPI by the `publish-sdk` workflow when a tag named `sdk-v<version>` is
+pushed. A published version cannot be replaced, so every change ships as a new version.
+
+1. Set the new version in `sdk/pyproject.toml` and run `uv lock` in `sdk/`.
+2. Move the entries under `Unreleased` in `CHANGELOG.md` to a section for the version and date.
+3. Merge to `main` and wait for CI to pass.
+4. Tag that commit and push the tag:
+
+   ```bash
+   git tag -a sdk-v0.1.1 -m "neutronx-sdk 0.1.1"
+   git push origin sdk-v0.1.1
+   ```
+
+The workflow refuses a tag that does not match the version in `sdk/pyproject.toml`.
+
 ## Pull requests
 
 - Keep a change to one purpose and add tests for the behaviour it changes.

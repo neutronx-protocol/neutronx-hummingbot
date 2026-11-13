@@ -6,9 +6,14 @@ Notable changes to the connector and the SDK. The format follows
 
 ## [Unreleased]
 
-## [0.1.0]
+### SDK
 
-First version.
+- Python 3.13 is tested and declared as supported.
+
+## [0.1.0] - 2026-11-13
+
+First version. The SDK is published on PyPI as
+[`neutronx-sdk`](https://pypi.org/project/neutronx-sdk/0.1.0/).
 
 ### Connector
 
@@ -25,3 +30,6 @@ First version.
 - Order messages, transaction building and signing, gas floors.
 - gRPC queries, broadcasting with confirmation, account sequence handling.
 - Models and paths of the public indexer API.
+
+[Unreleased]: https://github.com/neutronx-protocol/neutronx-hummingbot/compare/sdk-v0.1.0...HEAD
+[0.1.0]: https://github.com/neutronx-protocol/neutronx-hummingbot/releases/tag/sdk-v0.1.0
