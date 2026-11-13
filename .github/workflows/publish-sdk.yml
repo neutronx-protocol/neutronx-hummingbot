@@ -1,0 +1,70 @@
+name: publish-sdk
+
+on:
+  push:
+    tags: ["sdk-v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-sdk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check tag matches package version
+        run: |
+          version=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          if [ "${GITHUB_REF_NAME}" != "sdk-v${version}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match pyproject version ${version}"
+            exit 1
+          fi
+
+      - run: uv sync --locked
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run pyright
+      - run: uv run pytest
+
+      - run: uv build
+
+      - name: Check the wheel
+        run: |
+          wheel=$(ls dist/*.whl)
+          listing=$(unzip -l "$wheel")
+          grep -q "neutronx_sdk/proto/descriptors.binpb" <<< "$listing"
+          grep -q "neutronx_sdk/py.typed" <<< "$listing"
+          uv run --isolated --no-project --with "$wheel" python -c \
+            "import neutronx_sdk; from neutronx_sdk.proto import descriptors_ref; print(neutronx_sdk.__version__, descriptors_ref())"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-dist
+          path: sdk/dist/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/neutronx-sdk/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdk-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

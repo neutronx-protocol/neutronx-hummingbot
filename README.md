@@ -26,4 +26,4 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md). Changes are recorded in [`CHANGELOG.md
 
 ## License
 
-[Apache License 2.0](LICENSE). Copyright 2026 0xCheetahh.
+[Apache License 2.0](LICENSE). Copyright 2026 NeutronX.
