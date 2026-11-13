@@ -5,11 +5,8 @@ signing, short-term orders, gRPC queries and broadcasting.
 
 ## Install
 
-The package is not on PyPI yet. Install it from a checkout of this repository:
-
 ```bash
-git clone https://github.com/0xCheetahh/neutronx-hummingbot.git
-uv add ./neutronx-hummingbot/sdk          # or: pip install ./neutronx-hummingbot/sdk
+pip install neutronx-sdk   # or: uv add neutronx-sdk
 ```
 
 Python 3.10+.
@@ -108,6 +105,8 @@ CHAIN_REPO=/path/to/chain CHAIN_REF=v1.82.0 scripts/gen_descriptors.sh
 ## Development
 
 ```bash
+git clone https://github.com/neutronx-protocol/neutronx-hummingbot.git
+cd neutronx-hummingbot/sdk
 uv sync
 uv run pytest
 uv run pytest -m live        # reads the public testnet; NEUTRONX_LIVE_NETWORK=mainnet for mainnet

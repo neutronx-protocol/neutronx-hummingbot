@@ -34,10 +34,11 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/0xCheetahh/neutronx-hummingbot"
-Repository = "https://github.com/0xCheetahh/neutronx-hummingbot"
-Issues = "https://github.com/0xCheetahh/neutronx-hummingbot/issues"
-Changelog = "https://github.com/0xCheetahh/neutronx-hummingbot/blob/main/CHANGELOG.md"
+Homepage = "https://neutronx.com"
+Documentation = "https://docs.neutronx.com"
+Repository = "https://github.com/neutronx-protocol/neutronx-hummingbot"
+Issues = "https://github.com/neutronx-protocol/neutronx-hummingbot/issues"
+Changelog = "https://github.com/neutronx-protocol/neutronx-hummingbot/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
