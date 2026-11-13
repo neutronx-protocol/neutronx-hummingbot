@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "neutronx-sdk"
+version = "0.1.0"
+description = "Python SDK for the NeutronX perpetuals chain"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "0xCheetahh" }]
+keywords = ["neutronx", "perpetuals", "cosmos", "trading", "hummingbot"]
+requires-python = ">=3.10"
+dependencies = [
+    "bech32>=1.2",
+    "coincurve>=18",
+    "grpcio>=1.62",
+    "mnemonic>=0.20",
+    "protobuf>=5.26.1,<7",
+    "pycryptodome>=3.15",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
+]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.380",
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+    "types-grpcio>=1.0.0.20240311",
+    "types-protobuf>=5.26",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/neutronx_sdk"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/neutronx_sdk", "scripts", "tests", "README.md", "LICENSE", "NOTICE"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF", "ASYNC", "PT", "PL", "PERF", "C4", "RET", "TID"]
+ignore = ["PLR0913", "PLR2004", "PLR0911", "PLR0912"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004", "S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["neutronx_sdk"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+extraPaths = ["."]
+reportPrivateUsage = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-m 'not live' --strict-markers"
+markers = ["live: reads a public NeutronX network"]
