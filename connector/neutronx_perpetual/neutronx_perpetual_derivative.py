@@ -471,7 +471,7 @@ class NeutronxPerpetualDerivative(PerpetualDerivativePyBase):
         open_ids = {order.order_id for order in await self._data_source.open_orders()}
         for order in lost:
             if int(order.exchange_order_id) in open_ids:
-                await self._execute_order_cancel_and_process_update(order)
+                await self._execute_order_cancel(order)
             else:
                 await self._refresh_orders([order])
 
@@ -680,7 +680,7 @@ class NeutronxPerpetualDerivative(PerpetualDerivativePyBase):
             except asyncio.CancelledError:
                 raise
             except Exception:
-                self.logger().exception("Unexpected error in the NeutronX user stream listener")
+                self.logger().exception("Unexpected error in user stream listener loop.")
 
     def _process_orders_frame(self, frame: StreamFrame):
         subaccount_id = self._data_source.subaccount_id

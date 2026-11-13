@@ -1,6 +1,6 @@
 import hashlib
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from neutronx_sdk import TESTNET, ClientIdAllocator, OrderRequest, Wallet
 from neutronx_sdk.models import FeeTier, Market, Order, OrderbookParams, Position, SubaccountBalance
@@ -18,15 +18,22 @@ PRIVATE_KEY = hashlib.sha256(b"neutronx-connector-tests").hexdigest()
 WALLET = Wallet.from_hex(PRIVATE_KEY)
 ACCOUNT = WALLET.address
 BLOCK_TIME = "2026-11-10T12:00:00+00:00"
+FILL_FEE = "0.325"
 
 
-def market(pair: str = "BTC/USDC", status: str = "ACTIVE", tick: str = "0.5", min_quantity: str = "0.001") -> Market:
+def market(
+    pair: str = "BTC/USDC",
+    status: str = "ACTIVE",
+    tick: str = "0.5",
+    min_quantity: str = "0.001",
+    max_leverage: int = 10,
+) -> Market:
     return Market(
         pair=pair,
         status=status,
         tick_size=Decimal(tick),
         min_quantity=Decimal(min_quantity),
-        max_leverage=Decimal(10),
+        max_leverage=Decimal(max_leverage),
         maker_fee_rate=Decimal("0.0002"),
         taker_fee_rate=Decimal("0.0005"),
         maintenance_margin=Decimal("0.01"),
@@ -127,18 +134,25 @@ def order_json(
     }
 
 
-def fill_json(fill_id: str, order_id: int, quantity: str = "0.01", role: Optional[str] = None) -> Dict[str, Any]:
+def fill_json(
+    fill_id: str,
+    order_id: int,
+    quantity: str = "0.01",
+    role: Optional[str] = None,
+    price: str = "65000",
+    time: str = BLOCK_TIME,
+) -> Dict[str, Any]:
     payload: Dict[str, Any] = {
         "id": fill_id,
         "pair": "BTCUSDC",
         "side": "BUY",
-        "price": "65000",
+        "price": price,
         "quantity": quantity,
-        "fee": "0.325",
+        "fee": FILL_FEE,
         "order_id": order_id,
         "subaccount_id": 0,
         "block_height": 101,
-        "time": BLOCK_TIME,
+        "time": time,
     }
     if role is not None:
         payload["role"] = role
@@ -189,6 +203,14 @@ class FakeDataSource:
         self.place_result = PlacedOrder(order_id=555, status="OPEN", filled=Decimal(0))
         self.cancelled: List[int] = []
         self.cancel_outcome = CancelOutcome.CANCELLED
+        self.cancel_outcomes: Dict[int, CancelOutcome] = {}
+        self.place_error: Optional[Exception] = None
+        self.cancel_errors: Dict[int, Exception] = {}
+        self.order_error: Optional[Exception] = None
+        self.markets_error: Optional[Exception] = None
+        self.on_place: Optional[Callable[[], None]] = None
+        self.on_cancel: Optional[Callable[[], None]] = None
+        self.on_order: Optional[Callable[[], None]] = None
         self.started = False
         self.start_calls = 0
         self.node_checks = 0
@@ -212,6 +234,8 @@ class FakeDataSource:
         return 1000
 
     async def markets(self) -> Tuple[Market, ...]:
+        if self.markets_error is not None:
+            raise self.markets_error
         return self.markets_result
 
     async def orderbook_params(self, refresh: bool = False) -> OrderbookParams:
@@ -222,6 +246,9 @@ class FakeDataSource:
 
     async def order(self, order_id: int) -> Optional[Order]:
         self.order_lookups.append(order_id)
+        self._notify(self.on_order)
+        if self.order_error is not None:
+            raise self.order_error
         return self.orders.get(order_id)
 
     async def balance(self) -> SubaccountBalance:
@@ -235,8 +262,19 @@ class FakeDataSource:
 
     async def place(self, request: OrderRequest) -> PlacedOrder:
         self.placed.append(request)
+        self._notify(self.on_place)
+        if self.place_error is not None:
+            raise self.place_error
         return self.place_result
 
     async def cancel(self, order_id: int) -> CancelledOrder:
         self.cancelled.append(order_id)
-        return CancelledOrder(order_id=order_id, outcome=self.cancel_outcome)
+        self._notify(self.on_cancel)
+        if order_id in self.cancel_errors:
+            raise self.cancel_errors[order_id]
+        return CancelledOrder(order_id=order_id, outcome=self.cancel_outcomes.get(order_id, self.cancel_outcome))
+
+    @staticmethod
+    def _notify(callback: Optional[Callable[[], None]]) -> None:
+        if callback is not None:
+            callback()

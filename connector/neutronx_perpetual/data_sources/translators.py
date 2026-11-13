@@ -83,7 +83,7 @@ def trade_update(fill: FillV1, order: InFlightOrder, fee_schema: TradeFeeSchema)
     is_taker = fill.is_taker if fill.is_taker is not None else order.order_type is not OrderType.LIMIT_MAKER
     fee = TradeFeeBase.new_perpetual_fee(
         fee_schema=fee_schema,
-        position_action=order.position,
+        position_action=PositionAction.CLOSE if order.position is PositionAction.CLOSE else PositionAction.OPEN,
         percent_token=CONSTANTS.QUOTE_ASSET,
         flat_fees=[TokenAmount(token=CONSTANTS.QUOTE_ASSET, amount=fill.fee)],
     )
