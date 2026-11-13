@@ -8,7 +8,7 @@ signing, short-term orders, gRPC queries and broadcasting.
 The package is not on PyPI yet. Install it from a checkout of this repository:
 
 ```bash
-git clone <this repository>
+git clone https://github.com/0xCheetahh/neutronx-hummingbot.git
 uv add ./neutronx-hummingbot/sdk          # or: pip install ./neutronx-hummingbot/sdk
 ```
 
