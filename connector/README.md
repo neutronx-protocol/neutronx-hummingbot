@@ -146,8 +146,9 @@ including a transaction still waiting for its block.
 
 Open orders are reconciled account-wide from the chain. A finished order is looked up on chain
 first and then in indexer history, read from the newest page back to one minute before the order
-was created. The lookup reads at most 50 pages of 200 and logs a warning when it stops short.
-Lost orders are checked on chain before a new cancel is sent.
+was created. One lookup reads at most 50 pages of 200; a longer history is read on by the next
+lookup from where this one stopped, and until it is done the order counts as not found yet
+rather than missing. Lost orders are checked on chain before a new cancel is sent.
 
 A finished order reaches Hummingbot only after its fills do. While the chain shows more filled
 than the indexer has delivered, the order stays open, its fills are fetched at most every 5 s,
