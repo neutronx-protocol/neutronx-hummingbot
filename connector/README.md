@@ -139,11 +139,15 @@ When the chain refuses a transaction because an order to cancel is already gone,
 reported as gone and the rest goes out again as one transaction. Any other refusal of a batch
 makes the queue send its orders one by one, so one bad order does not fail the others.
 
+When the queue stops, every order and cancel it has not finished fails with a connection error,
+including a transaction still waiting for its block.
+
 ### Order state
 
 Open orders are reconciled account-wide from the chain. A finished order is looked up on chain
 first and then in indexer history, read from the newest page back to one minute before the order
-was created. Lost orders are checked on chain before a new cancel is sent.
+was created. The lookup reads at most 50 pages of 200 and logs a warning when it stops short.
+Lost orders are checked on chain before a new cancel is sent.
 
 A finished order reaches Hummingbot only after its fills do. While the chain shows more filled
 than the indexer has delivered, the order stays open, its fills are fetched at most every 5 s,
