@@ -104,7 +104,7 @@ class OrderBookDataSourceTests(IsolatedAsyncioWrapperTestCase):
     async def test_rest_snapshot_funding_and_prices(self):
         with aioresponses() as mock:
             mock.get(f"{INDEXER_URL}/markets/BTCUSDC/orderbook?depth=100", payload=BOOK)
-            mock.get(f"{INDEXER_URL}/markets/tickers", payload=[TICKER, {"pair": "ETHUSDC"}])
+            mock.get(f"{INDEXER_URL}/markets/tickers", payload=[TICKER, {"pair": "ETHUSDC"}], repeat=True)
             snapshot = await self.source._order_book_snapshot(PAIR)
             funding = await self.source.get_funding_info(PAIR)
             prices = await self.source.get_last_traded_prices([PAIR, "ETH-USDC", "SOL-USDC"])
